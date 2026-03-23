@@ -260,7 +260,8 @@
                 <h2>Featured Projects</h2>
             </div>
             <div class="projects-grid">
-                <div class="project-card">
+                <!-- Recon Engine -->
+                <div class="project-card" data-project="recon">
                     <div class="project-header">
                         <h3 class="project-title">
                             <i class="fas fa-cogs"></i>
@@ -288,9 +289,18 @@
                         <span class="tech-tag">Microservices</span>
                         <span class="tech-tag">Distributed Systems</span>
                     </div>
+                    <button class="project-arch-toggle" data-project="recon" aria-expanded="false">
+                        <i class="fas fa-project-diagram"></i>
+                        View Architecture
+                        <span class="toggle-icon">&#9660;</span>
+                    </button>
+                    <div class="arch-diagram" id="arch-recon">
+                        <div class="arch-diagram-inner"></div>
+                    </div>
                 </div>
 
-                <div class="project-card">
+                <!-- HyperStream Analytics -->
+                <div class="project-card" data-project="hyperstream">
                     <div class="project-header">
                         <h3 class="project-title">
                             <i class="fas fa-rocket"></i>
@@ -318,9 +328,18 @@
                         <span class="tech-tag">Single-Node Architecture</span>
                         <span class="tech-tag">UPI Systems</span>
                     </div>
+                    <button class="project-arch-toggle" data-project="hyperstream" aria-expanded="false">
+                        <i class="fas fa-project-diagram"></i>
+                        View Architecture
+                        <span class="toggle-icon">&#9660;</span>
+                    </button>
+                    <div class="arch-diagram" id="arch-hyperstream">
+                        <div class="arch-diagram-inner"></div>
+                    </div>
                 </div>
 
-                <div class="project-card">
+                <!-- IntelliQuery Dashboard -->
+                <div class="project-card" data-project="intelliquery">
                     <div class="project-header">
                         <h3 class="project-title">
                             <i class="fas fa-brain"></i>
@@ -348,36 +367,13 @@
                         <span class="tech-tag">NLP</span>
                         <span class="tech-tag">AI/ML</span>
                     </div>
-                </div>
-
-                <div class="project-card">
-                    <div class="project-header">
-                        <h3 class="project-title">
-                            <i class="fas fa-sticky-note"></i>
-                            Notes App
-                        </h3>
-                        <p class="project-subtitle">Full-Stack Web Application</p>
-                        <p class="project-description">
-                            Built a secure, full-stack notes application with comprehensive authentication and real-time synchronization. The project showcases modern web development practices with a focus on security, performance, and user experience.
-                        </p>
-                        <div class="project-impact">
-                            <div class="impact-title">Technical Features:</div>
-                            <div class="impact-stats">
-                                <span class="impact-stat">JWT Authentication</span>
-                                <span class="impact-stat">BCrypt Security</span>
-                                <span class="impact-stat">CRUD Operations</span>
-                                <span class="impact-stat">Real-time Sync</span>
-                                <span class="impact-stat">Responsive Design</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="project-tech">
-                        <span class="tech-tag">NodeJS</span>
-                        <span class="tech-tag">ExpressJS</span>
-                        <span class="tech-tag">ReactJS</span>
-                        <span class="tech-tag">JWT</span>
-                        <span class="tech-tag">BCrypt</span>
-                        <span class="tech-tag">REST API</span>
+                    <button class="project-arch-toggle" data-project="intelliquery" aria-expanded="false">
+                        <i class="fas fa-project-diagram"></i>
+                        View Architecture
+                        <span class="toggle-icon">&#9660;</span>
+                    </button>
+                    <div class="arch-diagram" id="arch-intelliquery">
+                        <div class="arch-diagram-inner"></div>
                     </div>
                 </div>
             </div>
@@ -442,7 +438,7 @@
     <!-- Footer -->
     <footer>
         <div class="container">
-            <p>&copy; 2025 Shiv Chandekar. Crafted with passion for scalable systems.</p>
+            <p>&copy; 2025 <span>Shiv Chandekar</span>. Crafted with passion for scalable systems.</p>
         </div>
     </footer>
 
