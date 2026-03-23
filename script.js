@@ -297,10 +297,14 @@ function renderDiagram(projectId) {
 
     container.appendChild(svg);
     attachNodeTooltips(svg);
+
+    if (projectId === 'recon') {
+        buildReconMetrics(container);
+    }
 }
 
 // ===== DIAGRAM HELPER: draw a node =====
-function drawNode(svg, ns, x, y, w, h, label, subLabel, cls, tooltip) {
+function drawNode(svg, ns, x, y, w, h, label, subLabel, cls, tooltip, icon = '') {
     const isHighlight = cls === 'highlight-node';
     const isDimmed = cls === 'dimmed-node';
 
@@ -317,18 +321,35 @@ function drawNode(svg, ns, x, y, w, h, label, subLabel, cls, tooltip) {
     rect.setAttribute('height', h);
     rect.setAttribute('rx', 6);
     // Inline fill/stroke so they work regardless of CSS cascade on dynamic SVG
-    rect.setAttribute('fill', isHighlight ? 'rgba(16,185,129,0.08)' : isDimmed ? 'rgba(148,163,184,0.04)' : '#0d1b2e');
-    rect.setAttribute('stroke', isHighlight ? '#10b981' : isDimmed ? 'rgba(148,163,184,0.3)' : 'rgba(0,212,255,0.5)');
+    rect.setAttribute('fill', isHighlight ? 'rgba(244,63,94,0.08)' : isDimmed ? 'rgba(161,161,170,0.04)' : '#141414');
+    rect.setAttribute('stroke', isHighlight ? '#f43f5e' : isDimmed ? 'rgba(161,161,170,0.3)' : 'rgba(225,29,72,0.5)');
     rect.setAttribute('stroke-width', '1.5');
     g.appendChild(rect);
 
-    const textFill = isDimmed ? '#94a3b8' : isHighlight ? '#10b981' : '#e2e8f0';
+    const labelFill = isDimmed ? '#a1a1aa' : isHighlight ? '#f43f5e' : '#f5f5f5';
+    const cx = x + w / 2;
+
+    if (icon) {
+        // Use foreignObject so FA CSS classes render reliably in dynamic SVG
+        const fo = document.createElementNS(ns, 'foreignObject');
+        fo.setAttribute('x', String(cx - 8));
+        fo.setAttribute('y', String(y + h / 2 - 22));
+        fo.setAttribute('width', '16');
+        fo.setAttribute('height', '16');
+        const iEl = document.createElement('i');
+        iEl.className = icon;
+        iEl.style.cssText = `color:${labelFill};font-size:12px;display:block;text-align:center;line-height:16px;`;
+        fo.appendChild(iEl);
+        g.appendChild(fo);
+    }
+
+    const labelYBase = icon ? y + h / 2 + 3 : y + h / 2;
     const text = document.createElementNS(ns, 'text');
-    text.setAttribute('x', x + w / 2);
-    text.setAttribute('y', subLabel ? y + h / 2 - 7 : y + h / 2);
+    text.setAttribute('x', cx);
+    text.setAttribute('y', subLabel ? labelYBase - 7 : labelYBase);
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('dominant-baseline', 'middle');
-    text.setAttribute('fill', textFill);
+    text.setAttribute('fill', labelFill);
     text.setAttribute('font-family', 'Courier New, monospace');
     text.setAttribute('font-size', '11');
     if (isDimmed) text.setAttribute('text-decoration', 'line-through');
@@ -337,10 +358,10 @@ function drawNode(svg, ns, x, y, w, h, label, subLabel, cls, tooltip) {
 
     if (subLabel) {
         const sub = document.createElementNS(ns, 'text');
-        sub.setAttribute('x', x + w / 2);
-        sub.setAttribute('y', y + h / 2 + 9);
+        sub.setAttribute('x', cx);
+        sub.setAttribute('y', (subLabel ? labelYBase - 7 : labelYBase) + (icon ? 16 : 16));
         sub.setAttribute('font-size', '9');
-        sub.setAttribute('fill', '#94a3b8');
+        sub.setAttribute('fill', '#a1a1aa');
         sub.setAttribute('text-anchor', 'middle');
         sub.setAttribute('dominant-baseline', 'middle');
         sub.setAttribute('font-family', 'Courier New, monospace');
@@ -363,7 +384,7 @@ function drawArrow(svg, ns, pathD, cls, markerId) {
 
     const isGreen = cls && cls.includes('green');
     const isDim = cls && cls.includes('dim');
-    const arrowColor = isGreen ? 'rgba(16,185,129,0.7)' : isDim ? 'rgba(148,163,184,0.3)' : 'rgba(0,212,255,0.7)';
+    const arrowColor = isGreen ? 'rgba(244,63,94,0.7)' : isDim ? 'rgba(161,161,170,0.3)' : 'rgba(225,29,72,0.7)';
 
     // Create marker if not already in this SVG
     if (!defs.querySelector(`#${markerId}`)) {
@@ -394,33 +415,210 @@ function drawArrow(svg, ns, pathD, cls, markerId) {
     svg.appendChild(path);
 }
 
+// ===== RECON METRICS DASHBOARD =====
+function buildReconMetrics(container) {
+    window._reconMetricIntervals = window._reconMetricIntervals || [];
+
+    let tps = 2847;
+    let matchRate = 99.4;
+    let pending = 142;
+    let kafkaLag = 18;
+    let lastNpciMins = 2;
+    let lastCbsMins = 2;
+
+    const html = `<div class="recon-metrics">
+      <div class="rm-tile" id="rm-tile-tps">
+        <span class="rm-value" id="rm-tps">2,847</span>
+        <span class="rm-label">TXN/s</span>
+        <span class="rm-dot rm-dot--live"></span>
+      </div>
+      <div class="rm-tile" id="rm-tile-match">
+        <span class="rm-value" id="rm-match">99.4%</span>
+        <span class="rm-label">Match Rate</span>
+        <span class="rm-dot rm-dot--live"></span>
+      </div>
+      <div class="rm-tile">
+        <span class="rm-value" id="rm-pending">142</span>
+        <span class="rm-label">Pending Recon</span>
+        <span class="rm-dot rm-dot--live"></span>
+      </div>
+      <div class="rm-tile">
+        <span class="rm-value" id="rm-lag">18ms</span>
+        <span class="rm-label">Kafka Lag</span>
+        <span class="rm-dot rm-dot--live"></span>
+      </div>
+      <div class="rm-tile">
+        <span class="rm-value" id="rm-file">NPCI 2m / CBS 2m</span>
+        <span class="rm-label">Last File</span>
+        <span class="rm-dot rm-dot--live"></span>
+      </div>
+    </div>`;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+    container.appendChild(wrapper.firstElementChild);
+
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+    window._reconMetricIntervals.push(setInterval(function() {
+        tps += rand(-150, 150);
+        tps = Math.max(2000, Math.min(4000, tps));
+        document.getElementById('rm-tps').textContent = tps.toLocaleString();
+    }, 1200));
+
+    window._reconMetricIntervals.push(setInterval(function() {
+        matchRate += (Math.random() - 0.5) * 0.2;
+        matchRate = Math.max(98.5, Math.min(99.9, matchRate));
+        const rounded = matchRate.toFixed(1);
+        const el = document.getElementById('rm-match');
+        const tile = document.getElementById('rm-tile-match');
+        el.textContent = rounded + '%';
+        if (parseFloat(rounded) < 99.0) {
+            tile.classList.add('rm-alert');
+        } else {
+            tile.classList.remove('rm-alert');
+        }
+    }, 3000));
+
+    window._reconMetricIntervals.push(setInterval(function() {
+        pending += rand(-20, 20);
+        pending = Math.max(50, Math.min(400, pending));
+        document.getElementById('rm-pending').textContent = pending;
+    }, 2000));
+
+    window._reconMetricIntervals.push(setInterval(function() {
+        kafkaLag += rand(-8, 8);
+        kafkaLag = Math.max(5, Math.min(80, kafkaLag));
+        document.getElementById('rm-lag').textContent = kafkaLag + 'ms';
+    }, 1500));
+
+    window._reconMetricIntervals.push(setInterval(function() {
+        lastNpciMins++;
+        lastCbsMins++;
+        document.getElementById('rm-file').textContent = 'NPCI ' + lastNpciMins + 'm / CBS ' + lastCbsMins + 'm';
+    }, 60000));
+}
+
 // ===== RECON ENGINE DIAGRAM =====
 function drawReconEngineDiagram(svg, ns) {
-    svg.setAttribute('viewBox', '0 0 700 220');
-    svg.setAttribute('width', '700');
-    svg.setAttribute('height', '220');
+    svg.setAttribute('viewBox', '0 0 760 300');
+    svg.setAttribute('width', '760');
+    svg.setAttribute('height', '300');
 
-    // Row 1: Payment Events → Kafka Topic → Recon Service
-    drawNode(svg, ns, 10,  80, 120, 44, 'Payment Events', 'UPI/IMPS/NEFT', '', 'Raw transaction events ingested from payment switches');
-    drawNode(svg, ns, 190, 80, 110, 44, 'Kafka Topic',    'Partitioned', '', '6 partitions, replication factor 3 for fault tolerance');
-    drawNode(svg, ns, 360, 80, 150, 44, 'Recon Service',  'Spring Boot', 'highlight-node', 'Multi-threaded consumer groups, batch reconciliation logic');
+    // --- Defs: motion paths (invisible, used by animateMotion) ---
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+        defs = document.createElementNS(ns, 'defs');
+        svg.insertBefore(defs, svg.firstChild);
+    }
 
-    // Row 2 (below Recon): Redis Cluster, YugabyteDB
-    drawNode(svg, ns, 310, 165, 120, 40, 'Redis Cluster',  'Cache Layer', '', 'In-memory idempotency keys, 2ms p99 lookups');
-    drawNode(svg, ns, 450, 165, 120, 40, 'YugabyteDB',     'Persistent Store', '', 'Distributed SQL, 3-node cluster, ACID transactions');
+    // Real-time path: Switch → Kafka midpoint → Java Consumer midpoint
+    const rtPath = document.createElementNS(ns, 'path');
+    rtPath.setAttribute('id', 'rt-path');
+    rtPath.setAttribute('d', 'M 110 62 L 165 62 L 265 62 L 325 62 L 435 62');
+    rtPath.setAttribute('fill', 'none');
+    rtPath.setAttribute('stroke', 'none');
+    defs.appendChild(rtPath);
 
-    // Alert Engine bottom-left
-    drawNode(svg, ns, 100, 165, 120, 40, 'Alert Engine', 'Async', '', 'Publishes mismatch alerts to ops Kafka topic');
+    // Batch path: SFTP → Redis midpoint
+    const batchPath = document.createElementNS(ns, 'path');
+    batchPath.setAttribute('id', 'batch-path');
+    batchPath.setAttribute('d', 'M 225 207 L 290 182');
+    batchPath.setAttribute('fill', 'none');
+    batchPath.setAttribute('stroke', 'none');
+    defs.appendChild(batchPath);
 
-    // Arrows
-    drawArrow(svg, ns, 'M 130 102 L 188 102', '', 'arr1');
-    drawArrow(svg, ns, 'M 300 102 L 358 102', '', 'arr2');
-    // Recon → Redis
-    drawArrow(svg, ns, 'M 420 124 Q 390 150 370 163', '', 'arr3');
-    // Recon → YugabyteDB
-    drawArrow(svg, ns, 'M 480 124 Q 490 148 510 163', '', 'arr4');
-    // Recon → Alert Engine
-    drawArrow(svg, ns, 'M 380 124 Q 280 155 220 163', '', 'arr5');
+    // --- Lane labels ---
+    const laneLabel1 = document.createElementNS(ns, 'text');
+    laneLabel1.setAttribute('x', '5');
+    laneLabel1.setAttribute('y', '30');
+    laneLabel1.setAttribute('fill', 'rgba(161,161,170,0.5)');
+    laneLabel1.setAttribute('font-family', 'Courier New, monospace');
+    laneLabel1.setAttribute('font-size', '9');
+    laneLabel1.textContent = 'REAL-TIME STREAM';
+    svg.appendChild(laneLabel1);
+
+    const laneLabel2 = document.createElementNS(ns, 'text');
+    laneLabel2.setAttribute('x', '5');
+    laneLabel2.setAttribute('y', '150');
+    laneLabel2.setAttribute('fill', 'rgba(161,161,170,0.5)');
+    laneLabel2.setAttribute('font-family', 'Courier New, monospace');
+    laneLabel2.setAttribute('font-size', '9');
+    laneLabel2.textContent = 'BATCH FILES';
+    svg.appendChild(laneLabel2);
+
+    // --- Lane 1: Real-time ---
+    drawNode(svg, ns, 10,  40, 100, 44, 'Switch',         'UPI Events',    '',              'Payment switch sending real-time UPI transaction events');
+    drawNode(svg, ns, 165, 40, 100, 44, 'Kafka',          'Broker',        'highlight-node','6 partitions, replication factor 3; sub-10ms publish latency');
+    drawNode(svg, ns, 325, 40, 110, 44, 'Java Consumer',  'Spring Boot',   '',              'Consumer group reads from Kafka, writes to YugabyteDB');
+    drawNode(svg, ns, 495, 40, 120, 44, 'YugabyteDB',     'Write Path',    '',              'Distributed SQL; stores raw switch transactions for recon');
+
+    // --- Lane 2: Batch ---
+    drawNode(svg, ns, 10,  160, 80, 44, 'NPCI',   'Cycle Files', '', 'NPCI end-of-day settlement cycle files via SFTP');
+    drawNode(svg, ns, 10,  220, 80, 44, 'CBS',    'Cycle Files', '', 'Core Banking System batch files via SFTP');
+    drawNode(svg, ns, 145, 185, 80, 44, 'SFTP',   'Batch',       '', 'Secure file transfer; files land in watched directory');
+    drawNode(svg, ns, 290, 160, 100, 44, 'Redis', 'Data Store',  'highlight-node', 'Loaded batch records keyed by txn ID; 2ms p99 reads');
+
+    // Gears node — stored so we can add CSS animation
+    const gearsG = drawNode(svg, ns, 450, 160, 120, 44, 'Redis Gears',   'Python UDF',    'highlight-node', 'Python UDF reads Switch (Redis/Yugabyte) + NPCI/CBS; compares txn ID, amount, DR/CR, status, customer ref');
+    gearsG.style.animation = 'reconPulse 2s ease-in-out infinite';
+
+    drawNode(svg, ns, 450, 225, 120, 44, 'Redis Streams',  'Discrepancies', '',             'Discrepancy events published to Redis Streams topic');
+    drawNode(svg, ns, 630, 185, 110, 44, 'Reporting Svc',  '→ YugabyteDB',  '',             'Consumes Redis Streams; persists reconciliation report to YugabyteDB');
+
+    // --- Arrows ---
+    // Lane 1 flow
+    drawArrow(svg, ns, 'M 110 62 L 163 62', '', 'ra1');
+    drawArrow(svg, ns, 'M 265 62 L 323 62', '', 'ra2');
+    drawArrow(svg, ns, 'M 435 62 L 493 62', '', 'ra3');
+    // Cross-lane: YugabyteDB write path → Redis (Switch data loaded for recon)
+    drawArrow(svg, ns, 'M 555 84 Q 555 130 390 175', 'dim-flow', 'ra4');
+    // Lane 2: npci + cbs → sftp
+    drawArrow(svg, ns, 'M 90 182 L 143 207', '', 'ra5');
+    drawArrow(svg, ns, 'M 90 242 L 143 214', '', 'ra6');
+    // sftp → redis
+    drawArrow(svg, ns, 'M 225 207 L 288 182', '', 'ra7');
+    // redis → gears
+    drawArrow(svg, ns, 'M 390 182 L 448 182', '', 'ra8');
+    // gears → streams (red / mismatch)
+    drawArrow(svg, ns, 'M 510 204 L 510 223', 'green-flow', 'ra9');
+    // streams → reporting
+    drawArrow(svg, ns, 'M 570 247 L 628 215', '', 'ra10');
+
+    // --- animateMotion packets ---
+    // Crimson packets on rt-path (Switch → Kafka → Java)
+    [0, 0.7, 1.4].forEach(function(delay) {
+        const c = document.createElementNS(ns, 'circle');
+        c.setAttribute('r', '3');
+        c.setAttribute('fill', '#dc2626');
+        const motion = document.createElementNS(ns, 'animateMotion');
+        motion.setAttribute('dur', '2s');
+        motion.setAttribute('begin', delay + 's');
+        motion.setAttribute('repeatCount', 'indefinite');
+        motion.setAttribute('rotate', 'auto');
+        const mpath = document.createElementNS(ns, 'mpath');
+        mpath.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#rt-path');
+        motion.appendChild(mpath);
+        c.appendChild(motion);
+        svg.appendChild(c);
+    });
+
+    // Gray packets on batch-path (SFTP → Redis)
+    [0, 1.2].forEach(function(delay) {
+        const c = document.createElementNS(ns, 'circle');
+        c.setAttribute('r', '3');
+        c.setAttribute('fill', '#71717a');
+        const motion = document.createElementNS(ns, 'animateMotion');
+        motion.setAttribute('dur', '4s');
+        motion.setAttribute('begin', delay + 's');
+        motion.setAttribute('repeatCount', 'indefinite');
+        motion.setAttribute('rotate', 'auto');
+        const mpath = document.createElementNS(ns, 'mpath');
+        mpath.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#batch-path');
+        motion.appendChild(mpath);
+        c.appendChild(motion);
+        svg.appendChild(c);
+    });
 }
 
 // ===== HYPERSTREAM ANALYTICS DIAGRAM =====
@@ -430,22 +628,22 @@ function drawHyperStreamDiagram(svg, ns) {
     svg.setAttribute('height', '230');
 
     // Row 1
-    drawNode(svg, ns, 10,  85, 120, 44, 'UPI TXN Feed', '70M+ / day', '', 'Raw UPI transaction stream from NPCI');
-    drawNode(svg, ns, 185, 85, 100, 44, 'Kafka',        'Broker', '', 'Message bus; fan-out to legacy and new pipelines');
+    drawNode(svg, ns, 10,  85, 120, 44, 'UPI TXN Feed', '70M+ / day', '', 'Raw UPI transaction stream from NPCI', 'fa-solid fa-rss');
+    drawNode(svg, ns, 185, 85, 100, 44, 'Kafka',        'Broker', '', 'Message bus; fan-out to legacy and new pipelines', 'fa-solid fa-layer-group');
 
     // Legacy path (dimmed)
-    drawNode(svg, ns, 355, 30,  140, 44, 'Spark Cluster', 'Legacy · 4hrs', 'dimmed-node', 'Deprecated: 40-node Spark cluster, high infrastructure cost');
+    drawNode(svg, ns, 355, 30,  140, 44, 'Spark Cluster', 'Legacy · 4hrs', 'dimmed-node', 'Deprecated: 40-node Spark cluster, high infrastructure cost', 'fa-solid fa-fire');
 
     // New path
-    drawNode(svg, ns, 355, 105, 140, 44, 'DuckDB Engine', 'Vectorized', 'highlight-node', 'Single-node columnar engine; processes full dataset in 15 min');
-    drawNode(svg, ns, 555, 105, 120, 44, 'Analytics Output', 'Reports', 'highlight-node', 'Reconciliation reports, cost dashboards');
+    drawNode(svg, ns, 355, 105, 140, 44, 'DuckDB Engine', 'Vectorized', 'highlight-node', 'Single-node columnar engine; processes full dataset in 15 min', 'fa-solid fa-database');
+    drawNode(svg, ns, 555, 105, 120, 44, 'Analytics Output', 'Reports', 'highlight-node', 'Reconciliation reports, cost dashboards', 'fa-solid fa-chart-bar');
 
     // Performance badge
     const badge = document.createElementNS(ns, 'text');
     badge.setAttribute('x', '425');
     badge.setAttribute('y', '185');
     badge.setAttribute('text-anchor', 'middle');
-    badge.setAttribute('fill', '#10b981');
+    badge.setAttribute('fill', '#f43f5e');
     badge.setAttribute('font-family', 'Courier New, monospace');
     badge.setAttribute('font-size', '11');
     badge.textContent = '18x faster · 70% cheaper';
@@ -468,14 +666,14 @@ function drawIntelliQueryDiagram(svg, ns) {
     svg.setAttribute('height', '200');
 
     // Row 1
-    drawNode(svg, ns, 10,  75, 100, 44, 'NL Query',      'User Input', '', 'Free-form natural language question from analyst');
-    drawNode(svg, ns, 165, 75, 110, 44, 'Langchain',     'Agent', '', 'Prompt chaining, memory, tool routing');
-    drawNode(svg, ns, 335, 75, 120, 44, 'Llama3 LLM',    'Local', 'highlight-node', 'Locally hosted Llama3 8B; no external API calls');
-    drawNode(svg, ns, 515, 75, 130, 44, 'SQL Generator',  'AST Builder', '', 'Converts LLM output to validated DuckDB SQL');
+    drawNode(svg, ns, 10,  75, 100, 44, 'NL Query',      'User Input', '', 'Free-form natural language question from analyst', 'fa-solid fa-comments');
+    drawNode(svg, ns, 165, 75, 110, 44, 'Langchain',     'Agent', '', 'Prompt chaining, memory, tool routing', 'fa-solid fa-link');
+    drawNode(svg, ns, 335, 75, 120, 44, 'Llama3 LLM',    'Local', 'highlight-node', 'Locally hosted Llama3 8B; no external API calls', 'fa-solid fa-brain');
+    drawNode(svg, ns, 515, 75, 130, 44, 'SQL Generator',  'AST Builder', '', 'Converts LLM output to validated DuckDB SQL', 'fa-solid fa-code');
 
     // Row 2
-    drawNode(svg, ns, 390, 150, 120, 40, 'DuckDB Engine', 'Analytics', 'highlight-node', 'Executes generated SQL; sub-second response');
-    drawNode(svg, ns, 560, 150, 120, 40, 'Streamlit UI',  'Dashboard', '', 'Charts, tables, RCA insights rendered live');
+    drawNode(svg, ns, 390, 150, 120, 40, 'DuckDB Engine', 'Analytics', 'highlight-node', 'Executes generated SQL; sub-second response', 'fa-solid fa-database');
+    drawNode(svg, ns, 560, 150, 120, 40, 'Streamlit UI',  'Dashboard', '', 'Charts, tables, RCA insights rendered live', 'fa-solid fa-display');
 
     // Arrows row 1
     drawArrow(svg, ns, 'M 110 97 L 163 97', '', 'iq1');
@@ -595,7 +793,7 @@ function showNotification(message, type = 'info') {
     notification.textContent = message;
     notification.style.cssText = `
         position: fixed; top: 20px; right: 20px;
-        background: rgba(0, 212, 255, 0.9); color: #0a0f1e;
+        background: rgba(225, 29, 72, 0.9); color: #0c0c0c;
         padding: 1rem 2rem; border-radius: 5px; z-index: 10000;
         transform: translateX(400px); transition: transform 0.3s ease;
         max-width: 300px; word-wrap: break-word; font-weight: 600;
@@ -610,8 +808,8 @@ function showNotification(message, type = 'info') {
 
 // ===== DEVELOPER CONSOLE MESSAGE =====
 function showDeveloperMessage() {
-    const c = 'color: #00d4ff; font-size: 14px; font-weight: bold;';
-    const s = 'color: #94a3b8; font-size: 12px;';
+    const c = 'color: #e11d48; font-size: 14px; font-weight: bold;';
+    const s = 'color: #a1a1aa; font-size: 12px;';
     console.log('%cHey there, fellow developer! 👋', c);
     console.log('%cImpressed by the pipeline architecture? Let\'s connect!', s);
     console.log('%cEmail: shivchandekar2805@gmail.com', s);
@@ -652,7 +850,7 @@ window.addEventListener('error', function(e) {
 window.addEventListener('load', function() {
     if ('performance' in window) {
         const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
-        console.log(`%cPortfolio loaded in ${loadTime}ms`, 'color: #00d4ff; font-weight: bold;');
+        console.log(`%cPortfolio loaded in ${loadTime}ms`, 'color: #e11d48; font-weight: bold;');
     }
 });
 
