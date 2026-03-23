@@ -10,7 +10,10 @@
     <meta property="og:description" content="Enterprise-grade backend systems architect processing 70M+ daily transactions">
     <meta property="og:type" content="website">
     
-    <!-- External CSS and Font Awesome -->
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="./style.css">
 </head>
@@ -30,6 +33,14 @@
                 <li><a href="#projects">Projects</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
+            <div class="nav-controls">
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" onclick="toggleTheme()">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false" onclick="toggleMobileMenu()">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
         </div>
     </nav>
 
@@ -402,7 +413,7 @@
                         <div class="contact-icon">
                             <i class="fas fa-envelope"></i>
                         </div>
-                        <span></span>
+                        <span>shivchandekar2805@gmail.com</span>
                     </a>
                     
                     
@@ -451,6 +462,13 @@
         <i class="fas fa-chevron-up"></i>
     </button>
 
+    <!-- Apply saved theme before render to prevent FOUC -->
+    <script>
+        (function() {
+            var t = localStorage.getItem('theme') || 'dark';
+            document.body.setAttribute('data-theme', t);
+        })();
+    </script>
     <!-- External JavaScript -->
     <script src="./script.js"></script>
 </body>
