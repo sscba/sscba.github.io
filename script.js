@@ -303,8 +303,16 @@ function renderDiagram(projectId) {
     }
 }
 
+// ===== DIAGRAM HELPER: hex color → rgba string =====
+function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+
 // ===== DIAGRAM HELPER: draw a node =====
-function drawNode(svg, ns, x, y, w, h, label, subLabel, cls, tooltip, icon = '') {
+function drawNode(svg, ns, x, y, w, h, label, subLabel, cls, tooltip, icon = '', color = null) {
     const isHighlight = cls === 'highlight-node';
     const isDimmed = cls === 'dimmed-node';
 
@@ -321,12 +329,14 @@ function drawNode(svg, ns, x, y, w, h, label, subLabel, cls, tooltip, icon = '')
     rect.setAttribute('height', h);
     rect.setAttribute('rx', 6);
     // Inline fill/stroke so they work regardless of CSS cascade on dynamic SVG
-    rect.setAttribute('fill', isHighlight ? 'rgba(244,63,94,0.08)' : isDimmed ? 'rgba(161,161,170,0.04)' : '#141414');
-    rect.setAttribute('stroke', isHighlight ? '#f43f5e' : isDimmed ? 'rgba(161,161,170,0.3)' : 'rgba(225,29,72,0.5)');
+    const rectFill   = color ? hexToRgba(color, 0.08) : (isHighlight ? 'rgba(244,63,94,0.08)' : isDimmed ? 'rgba(161,161,170,0.04)' : '#141414');
+    const rectStroke = color ? color                   : (isHighlight ? '#f43f5e' : isDimmed ? 'rgba(161,161,170,0.3)' : 'rgba(225,29,72,0.5)');
+    rect.setAttribute('fill', rectFill);
+    rect.setAttribute('stroke', rectStroke);
     rect.setAttribute('stroke-width', '1.5');
     g.appendChild(rect);
 
-    const labelFill = isDimmed ? '#a1a1aa' : isHighlight ? '#f43f5e' : '#f5f5f5';
+    const labelFill = color ? color : (isDimmed ? '#a1a1aa' : isHighlight ? '#f43f5e' : '#f5f5f5');
     const cx = x + w / 2;
 
     if (icon) {
@@ -374,7 +384,7 @@ function drawNode(svg, ns, x, y, w, h, label, subLabel, cls, tooltip, icon = '')
 }
 
 // ===== DIAGRAM HELPER: draw an arrow path =====
-function drawArrow(svg, ns, pathD, cls, markerId) {
+function drawArrow(svg, ns, pathD, cls, markerId, color = null) {
     // Ensure <defs> exists
     let defs = svg.querySelector('defs');
     if (!defs) {
@@ -384,7 +394,7 @@ function drawArrow(svg, ns, pathD, cls, markerId) {
 
     const isGreen = cls && cls.includes('green');
     const isDim = cls && cls.includes('dim');
-    const arrowColor = isGreen ? 'rgba(244,63,94,0.7)' : isDim ? 'rgba(161,161,170,0.3)' : 'rgba(225,29,72,0.7)';
+    const arrowColor = color ? color : (isGreen ? 'rgba(244,63,94,0.7)' : isDim ? 'rgba(161,161,170,0.3)' : 'rgba(225,29,72,0.7)');
 
     // Create marker if not already in this SVG
     if (!defs.querySelector(`#${markerId}`)) {
@@ -501,96 +511,122 @@ function buildReconMetrics(container) {
 
 // ===== RECON ENGINE DIAGRAM =====
 function drawReconEngineDiagram(svg, ns) {
-    svg.setAttribute('viewBox', '0 0 760 300');
-    svg.setAttribute('width', '760');
-    svg.setAttribute('height', '300');
+    svg.setAttribute('viewBox', '0 0 1290 450');
+    svg.setAttribute('width', '1290');
+    svg.setAttribute('height', '450');
 
-    // --- Defs: motion paths (invisible, used by animateMotion) ---
+    // Color palette per lane
+    const C_ROSE   = '#e11d48';
+    const C_EMERALD = '#10b981';
+    const C_VIOLET = '#8b5cf6';
+    const C_AMBER  = '#f59e0b';
+    const C_SLATE  = 'rgba(100,116,139,0.35)';
+
+    // --- Defs: invisible motion paths ---
     let defs = svg.querySelector('defs');
     if (!defs) {
         defs = document.createElementNS(ns, 'defs');
         svg.insertBefore(defs, svg.firstChild);
     }
 
-    // Real-time path: Switch → Kafka midpoint → Java Consumer midpoint
+    // Real-time path: Switch → Kafka → Java Consumer (rose)
     const rtPath = document.createElementNS(ns, 'path');
     rtPath.setAttribute('id', 'rt-path');
-    rtPath.setAttribute('d', 'M 110 62 L 165 62 L 265 62 L 325 62 L 435 62');
+    rtPath.setAttribute('d', 'M 110 72 L 165 72 L 265 72 L 325 72 L 435 72');
     rtPath.setAttribute('fill', 'none');
     rtPath.setAttribute('stroke', 'none');
     defs.appendChild(rtPath);
 
-    // Batch path: SFTP → Redis midpoint
+    // Batch path: Batch Loader → Redis (violet)
     const batchPath = document.createElementNS(ns, 'path');
     batchPath.setAttribute('id', 'batch-path');
-    batchPath.setAttribute('d', 'M 225 207 L 290 182');
+    batchPath.setAttribute('d', 'M 390 265 Q 425 240 453 212');
     batchPath.setAttribute('fill', 'none');
     batchPath.setAttribute('stroke', 'none');
     defs.appendChild(batchPath);
 
+    // Recon path: Redis → Gears → up to Streams (amber)
+    const reconPath = document.createElementNS(ns, 'path');
+    reconPath.setAttribute('id', 'recon-path');
+    reconPath.setAttribute('d', 'M 575 212 L 633 212 L 690 212 L 690 190 L 690 137 L 803 137');
+    reconPath.setAttribute('fill', 'none');
+    reconPath.setAttribute('stroke', 'none');
+    defs.appendChild(reconPath);
+
     // --- Lane labels ---
-    const laneLabel1 = document.createElementNS(ns, 'text');
-    laneLabel1.setAttribute('x', '5');
-    laneLabel1.setAttribute('y', '30');
-    laneLabel1.setAttribute('fill', 'rgba(161,161,170,0.5)');
-    laneLabel1.setAttribute('font-family', 'Courier New, monospace');
-    laneLabel1.setAttribute('font-size', '9');
-    laneLabel1.textContent = 'REAL-TIME STREAM';
-    svg.appendChild(laneLabel1);
+    function laneLabel(x, y, text) {
+        const t = document.createElementNS(ns, 'text');
+        t.setAttribute('x', String(x));
+        t.setAttribute('y', String(y));
+        t.setAttribute('fill', 'rgba(161,161,170,0.45)');
+        t.setAttribute('font-family', 'Courier New, monospace');
+        t.setAttribute('font-size', '9');
+        t.textContent = text;
+        svg.appendChild(t);
+    }
+    laneLabel(5,   40, 'REAL-TIME STREAM');
+    laneLabel(5,  190, 'BATCH FILES');
+    laneLabel(455, 180, 'RECON CORE');
+    laneLabel(975,  40, 'OUTPUT');
 
-    const laneLabel2 = document.createElementNS(ns, 'text');
-    laneLabel2.setAttribute('x', '5');
-    laneLabel2.setAttribute('y', '150');
-    laneLabel2.setAttribute('fill', 'rgba(161,161,170,0.5)');
-    laneLabel2.setAttribute('font-family', 'Courier New, monospace');
-    laneLabel2.setAttribute('font-size', '9');
-    laneLabel2.textContent = 'BATCH FILES';
-    svg.appendChild(laneLabel2);
+    // --- Lane 1: Real-time (rose) ---
+    drawNode(svg, ns, 10,  50, 100, 44, 'Switch',        'UPI Events',       '', 'Payment switch sending real-time UPI transaction events', '', C_ROSE);
+    drawNode(svg, ns, 165, 50, 100, 44, 'Kafka',         '10 partitions RF3', '', '10 Kafka partitions, replication factor 3; sub-10ms publish latency', '', C_ROSE);
+    drawNode(svg, ns, 325, 50, 110, 44, 'Java Consumer', 'Spring Boot',       '', 'Consumer group reads from Kafka; writes raw transactions to YugabyteDB', '', C_ROSE);
+    drawNode(svg, ns, 495, 50, 120, 44, 'Yugabyte DB',   'Raw Switch Data',   '', 'Distributed SQL (Cassandra API); stores raw switch transactions for recon', '', C_EMERALD);
 
-    // --- Lane 1: Real-time ---
-    drawNode(svg, ns, 10,  40, 100, 44, 'Switch',         'UPI Events',    '',              'Payment switch sending real-time UPI transaction events');
-    drawNode(svg, ns, 165, 40, 100, 44, 'Kafka',          'Broker',        'highlight-node','6 partitions, replication factor 3; sub-10ms publish latency');
-    drawNode(svg, ns, 325, 40, 110, 44, 'Java Consumer',  'Spring Boot',   '',              'Consumer group reads from Kafka, writes to YugabyteDB');
-    drawNode(svg, ns, 495, 40, 120, 44, 'YugabyteDB',     'Write Path',    '',              'Distributed SQL; stores raw switch transactions for recon');
+    // --- Lane 2: Batch files (violet) ---
+    drawNode(svg, ns, 10,  200, 80,  44, 'NPCI',         'Cycle Files',   '', 'NPCI end-of-day settlement cycle files delivered via SFTP', '', C_VIOLET);
+    drawNode(svg, ns, 10,  285, 80,  44, 'CBS',          'Cycle Files',   '', 'Core Banking System batch files delivered via SFTP', '', C_VIOLET);
+    drawNode(svg, ns, 145, 243, 80,  44, 'SFTP Server',  'File Ingestion','', 'Secure file transfer; files land in watched directory', '', C_VIOLET);
+    drawNode(svg, ns, 280, 243, 110, 44, 'Batch Loader', 'Java Service',  '', 'Java service reads SFTP files; loads NPCI + CBS records into Redis keyed by txn ID', '', C_VIOLET);
 
-    // --- Lane 2: Batch ---
-    drawNode(svg, ns, 10,  160, 80, 44, 'NPCI',   'Cycle Files', '', 'NPCI end-of-day settlement cycle files via SFTP');
-    drawNode(svg, ns, 10,  220, 80, 44, 'CBS',    'Cycle Files', '', 'Core Banking System batch files via SFTP');
-    drawNode(svg, ns, 145, 185, 80, 44, 'SFTP',   'Batch',       '', 'Secure file transfer; files land in watched directory');
-    drawNode(svg, ns, 290, 160, 100, 44, 'Redis', 'Data Store',  'highlight-node', 'Loaded batch records keyed by txn ID; 2ms p99 reads');
-
-    // Gears node — stored so we can add CSS animation
-    const gearsG = drawNode(svg, ns, 450, 160, 120, 44, 'Redis Gears',   'Python UDF',    'highlight-node', 'Python UDF reads Switch (Redis/Yugabyte) + NPCI/CBS; compares txn ID, amount, DR/CR, status, customer ref');
+    // --- Recon core (amber) ---
+    drawNode(svg, ns, 455, 190, 120, 44, 'Redis Cluster', 'Recon Dataset', '', 'All three datasets co-located: Switch (from Yugabyte), NPCI, CBS — keyed by txn ID; 2ms p99 reads', '', C_AMBER);
+    const gearsG = drawNode(svg, ns, 635, 190, 110, 44, 'Redis Gears', 'Python UDF', '', 'Python UDF compares txn ID, amount, DR/CR flag, status code, CRN across all three sources; publishes discrepancies', '', C_AMBER);
     gearsG.style.animation = 'reconPulse 2s ease-in-out infinite';
+    drawNode(svg, ns, 805, 115, 120, 44, 'Redis Streams', 'Discrepancies', '', 'Discrepancy events published to Redis Streams topic; consumed by Reporting Service', '', C_AMBER);
 
-    drawNode(svg, ns, 450, 225, 120, 44, 'Redis Streams',  'Discrepancies', '',             'Discrepancy events published to Redis Streams topic');
-    drawNode(svg, ns, 630, 185, 110, 44, 'Reporting Svc',  '→ YugabyteDB',  '',             'Consumes Redis Streams; persists reconciliation report to YugabyteDB');
+    // --- Output (emerald) ---
+    drawNode(svg, ns, 975,  50, 120, 44, 'Reporting Svc', 'Consumer',      '', 'Consumes Redis Streams; writes reconciliation results to Yugabyte', '', C_EMERALD);
+    drawNode(svg, ns, 1150, 50, 120, 44, 'Yugabyte DB',   'Recon Results', '', 'Separate Yugabyte keyspace; stores final reconciliation report rows', '', C_EMERALD);
 
-    // --- Arrows ---
-    // Lane 1 flow
-    drawArrow(svg, ns, 'M 110 62 L 163 62', '', 'ra1');
-    drawArrow(svg, ns, 'M 265 62 L 323 62', '', 'ra2');
-    drawArrow(svg, ns, 'M 435 62 L 493 62', '', 'ra3');
-    // Cross-lane: YugabyteDB write path → Redis (Switch data loaded for recon)
-    drawArrow(svg, ns, 'M 555 84 Q 555 130 390 175', 'dim-flow', 'ra4');
-    // Lane 2: npci + cbs → sftp
-    drawArrow(svg, ns, 'M 90 182 L 143 207', '', 'ra5');
-    drawArrow(svg, ns, 'M 90 242 L 143 214', '', 'ra6');
-    // sftp → redis
-    drawArrow(svg, ns, 'M 225 207 L 288 182', '', 'ra7');
-    // redis → gears
-    drawArrow(svg, ns, 'M 390 182 L 448 182', '', 'ra8');
-    // gears → streams (red / mismatch)
-    drawArrow(svg, ns, 'M 510 204 L 510 223', 'green-flow', 'ra9');
-    // streams → reporting
-    drawArrow(svg, ns, 'M 570 247 L 628 215', '', 'ra10');
+    // --- Orchestrator (slate) ---
+    drawNode(svg, ns, 430, 370, 200, 44, 'Redis Orchestrator', 'Settlement Date · Cycle · Job Status', '', 'Redis status keys coordinate pipeline stages: each service only proceeds after prior stage marks complete', '', '#64748b');
+
+    // --- Arrows: real-time lane (rose) ---
+    drawArrow(svg, ns, 'M 110 72 L 163 72', '', 'ra1', hexToRgba(C_ROSE, 0.7));
+    drawArrow(svg, ns, 'M 265 72 L 323 72', '', 'ra2', hexToRgba(C_ROSE, 0.7));
+    drawArrow(svg, ns, 'M 435 72 L 493 72', '', 'ra3', hexToRgba(C_ROSE, 0.7));
+
+    // Cross-lane: Yugabyte raw → Redis Cluster (Switch data loaded for recon), dim emerald
+    drawArrow(svg, ns, 'M 555 94 Q 545 155 455 190', 'dim-flow', 'ra4', hexToRgba(C_EMERALD, 0.4));
+
+    // --- Arrows: batch lane (violet) ---
+    drawArrow(svg, ns, 'M 90 222 L 143 255', '', 'ra5', hexToRgba(C_VIOLET, 0.7));
+    drawArrow(svg, ns, 'M 90 307 L 143 273', '', 'ra6', hexToRgba(C_VIOLET, 0.7));
+    drawArrow(svg, ns, 'M 225 265 L 278 265', '', 'ra7', hexToRgba(C_VIOLET, 0.7));
+    drawArrow(svg, ns, 'M 390 265 Q 425 240 453 212', '', 'ra8', hexToRgba(C_VIOLET, 0.7));
+
+    // --- Arrows: recon core (amber) ---
+    drawArrow(svg, ns, 'M 575 212 L 633 212', '', 'ra9',  hexToRgba(C_AMBER, 0.7));
+    drawArrow(svg, ns, 'M 690 190 Q 690 137 803 137', '', 'ra10', hexToRgba(C_AMBER, 0.7));
+
+    // --- Arrows: output (emerald) ---
+    drawArrow(svg, ns, 'M 925 137 L 973 72',   '', 'ra11', hexToRgba(C_EMERALD, 0.7));
+    drawArrow(svg, ns, 'M 1095 72 L 1148 72',  '', 'ra12', hexToRgba(C_EMERALD, 0.7));
+
+    // --- Coordination arrows: orchestrator → consumer / batch loader / gears (dim slate) ---
+    drawArrow(svg, ns, 'M 430 370 Q 380 250 380 94',  'dim-flow', 'ra13', C_SLATE);
+    drawArrow(svg, ns, 'M 480 370 L 330 287',          'dim-flow', 'ra14', C_SLATE);
+    drawArrow(svg, ns, 'M 630 370 Q 690 310 690 234',  'dim-flow', 'ra15', C_SLATE);
 
     // --- animateMotion packets ---
-    // Crimson packets on rt-path (Switch → Kafka → Java)
+    // Rose packets on real-time path (Switch → Kafka → Java Consumer)
     [0, 0.7, 1.4].forEach(function(delay) {
         const c = document.createElementNS(ns, 'circle');
         c.setAttribute('r', '3');
-        c.setAttribute('fill', '#dc2626');
+        c.setAttribute('fill', C_ROSE);
         const motion = document.createElementNS(ns, 'animateMotion');
         motion.setAttribute('dur', '2s');
         motion.setAttribute('begin', delay + 's');
@@ -603,18 +639,35 @@ function drawReconEngineDiagram(svg, ns) {
         svg.appendChild(c);
     });
 
-    // Gray packets on batch-path (SFTP → Redis)
+    // Violet packets on batch path (Batch Loader → Redis)
     [0, 1.2].forEach(function(delay) {
         const c = document.createElementNS(ns, 'circle');
         c.setAttribute('r', '3');
-        c.setAttribute('fill', '#71717a');
+        c.setAttribute('fill', C_VIOLET);
         const motion = document.createElementNS(ns, 'animateMotion');
-        motion.setAttribute('dur', '4s');
+        motion.setAttribute('dur', '3s');
         motion.setAttribute('begin', delay + 's');
         motion.setAttribute('repeatCount', 'indefinite');
         motion.setAttribute('rotate', 'auto');
         const mpath = document.createElementNS(ns, 'mpath');
         mpath.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#batch-path');
+        motion.appendChild(mpath);
+        c.appendChild(motion);
+        svg.appendChild(c);
+    });
+
+    // Amber packets on recon path (Redis → Gears → Streams)
+    [0, 0.9].forEach(function(delay) {
+        const c = document.createElementNS(ns, 'circle');
+        c.setAttribute('r', '3');
+        c.setAttribute('fill', C_AMBER);
+        const motion = document.createElementNS(ns, 'animateMotion');
+        motion.setAttribute('dur', '2.5s');
+        motion.setAttribute('begin', delay + 's');
+        motion.setAttribute('repeatCount', 'indefinite');
+        motion.setAttribute('rotate', 'auto');
+        const mpath = document.createElementNS(ns, 'mpath');
+        mpath.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#recon-path');
         motion.appendChild(mpath);
         c.appendChild(motion);
         svg.appendChild(c);
