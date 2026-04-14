@@ -9,7 +9,7 @@ import path from 'path'
 // Check: GitHub repo → Settings → Pages → "Your site is published at..."
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/portfolio/',
+  base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
