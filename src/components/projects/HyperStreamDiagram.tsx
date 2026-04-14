@@ -1,8 +1,9 @@
-import { useCallback } from 'react'
 import {
   ReactFlow,
   Background,
   Controls,
+  Panel,
+  useReactFlow,
   type Node,
   type Edge,
   type NodeTypes,
@@ -10,6 +11,7 @@ import {
   Position,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface CustomNodeData {
   label: string
@@ -70,15 +72,37 @@ const edges: Edge[] = [
   { id: 'e4', source: 'duckdb', target: 'output', animated: true, style: { stroke: '#10b981', strokeWidth: 2 } },
 ]
 
+function PanButtons() {
+  const { getViewport, setViewport } = useReactFlow()
+  const btn = {
+    background: '#1a1a1a',
+    border: '1px solid rgba(16,185,129,0.35)',
+    color: '#10b981',
+    borderRadius: 6,
+    padding: '4px 8px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+  } as const
+  const pan = (dx: number) => {
+    const { x, y, zoom } = getViewport()
+    setViewport({ x: x + dx, y, zoom }, { duration: 300 })
+  }
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <button onClick={() => pan(300)}  style={btn} title="Pan left"><ChevronLeft  size={14} /></button>
+      <button onClick={() => pan(-300)} style={btn} title="Pan right"><ChevronRight size={14} /></button>
+    </div>
+  )
+}
+
 export function HyperStreamDiagram() {
-  const onInit = useCallback(() => {}, [])
   return (
     <div className="w-full rounded-xl overflow-hidden" style={{ height: 260, background: '#0d0d0d', border: '1px solid rgba(16,185,129,0.2)' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
-        onInit={onInit}
         fitView
         fitViewOptions={{ padding: 0.25 }}
         proOptions={{ hideAttribution: true }}
@@ -91,6 +115,7 @@ export function HyperStreamDiagram() {
       >
         <Background color="rgba(16,185,129,0.04)" gap={20} />
         <Controls showInteractive={false} style={{ background: '#1a1a1a', border: '1px solid rgba(16,185,129,0.2)' }} />
+        <Panel position="bottom-right"><PanButtons /></Panel>
       </ReactFlow>
     </div>
   )

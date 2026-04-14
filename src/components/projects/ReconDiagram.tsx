@@ -1,8 +1,9 @@
-import { useCallback } from 'react'
 import {
   ReactFlow,
   Background,
   Controls,
+  Panel,
+  useReactFlow,
   type Node,
   type Edge,
   type NodeTypes,
@@ -10,6 +11,7 @@ import {
   Position,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface CustomNodeData {
   label: string
@@ -108,15 +110,37 @@ const edges: Edge[] = [
   { id: 'e15', source: 'orch', target: 'gears',       sourceHandle: 'bottom', targetHandle: 'top', type: 'smoothstep', style: { stroke: 'rgba(100,116,139,0.35)', strokeWidth: 1.5, strokeDasharray: '5 3' } },
 ]
 
+function PanButtons() {
+  const { getViewport, setViewport } = useReactFlow()
+  const btn = {
+    background: '#1a1a1a',
+    border: '1px solid rgba(225,29,72,0.35)',
+    color: '#e11d48',
+    borderRadius: 6,
+    padding: '4px 8px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+  } as const
+  const pan = (dx: number) => {
+    const { x, y, zoom } = getViewport()
+    setViewport({ x: x + dx, y, zoom }, { duration: 300 })
+  }
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <button onClick={() => pan(300)}  style={btn} title="Pan left"><ChevronLeft  size={14} /></button>
+      <button onClick={() => pan(-300)} style={btn} title="Pan right"><ChevronRight size={14} /></button>
+    </div>
+  )
+}
+
 export function ReconDiagram() {
-  const onInit = useCallback(() => {}, [])
   return (
     <div className="w-full rounded-xl overflow-hidden" style={{ height: 480, background: '#0d0d0d', border: '1px solid rgba(225,29,72,0.2)' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
-        onInit={onInit}
         fitView
         fitViewOptions={{ padding: 0.15 }}
         proOptions={{ hideAttribution: true }}
@@ -129,6 +153,7 @@ export function ReconDiagram() {
       >
         <Background color="rgba(225,29,72,0.05)" gap={20} />
         <Controls showInteractive={false} style={{ background: '#1a1a1a', border: '1px solid rgba(225,29,72,0.2)' }} />
+        <Panel position="bottom-right"><PanButtons /></Panel>
       </ReactFlow>
     </div>
   )

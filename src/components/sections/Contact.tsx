@@ -5,10 +5,10 @@ import { Mail, Linkedin, Github, Briefcase, Download } from 'lucide-react'
 const COPPER = '#c2773a'
 
 const SOCIAL_LINKS = [
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/shiv-chandekar/', icon: Linkedin, color: '#60a5fa' },
-  { label: 'GitHub',   href: 'https://github.com/shivC',                      icon: Github,   color: '#fafaf9' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/shiv-chandekar-0799241b6/', icon: Linkedin, color: '#60a5fa' },
+  { label: 'GitHub',   href: 'https://github.com/sscba',                      icon: Github,   color: '#fafaf9' },
   { label: 'Naukri',  href: 'https://www.naukri.com/mnjuser/profile',         icon: Briefcase, color: '#818cf8' },
-  { label: 'Email',    href: 'mailto:shivchande95@gmail.com',                  icon: Mail,     color: COPPER },
+  { label: 'Email',    href: 'mailto:shivchande2805@gmail.com',                  icon: Mail,     color: COPPER },
 ]
 
 export function Contact() {
@@ -61,7 +61,7 @@ export function Contact() {
         {/* Email CTA */}
         <motion.a
           {...fadeUp(0.2)}
-          href="mailto:shivchande95@gmail.com"
+          href="mailto:shivchande2805@gmail.com"
           className="mx-auto flex items-center gap-3 px-8 py-4 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 hover:scale-105"
           style={{
             fontFamily: "'Inter', sans-serif",
