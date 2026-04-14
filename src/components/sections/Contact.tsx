@@ -72,7 +72,7 @@ export function Contact() {
           whileHover={{ boxShadow: '0 0 32px rgba(194,119,58,0.25)' }}
         >
           <Mail size={16} />
-          shivchande95@gmail.com
+          shivchandekar2805@gmail.com
         </motion.a>
 
         {/* Social links */}
