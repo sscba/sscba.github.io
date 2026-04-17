@@ -103,6 +103,21 @@ h1, h2, h3 {
   to   { transform: translateX(110vw); opacity: 0; }
 }
 
+/* ── Ticker tape scroll ── */
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.ticker-tape-track {
+  animation: ticker-scroll 28s linear infinite;
+  will-change: transform;
+}
+
+.ticker-tape-track:hover {
+  animation-play-state: paused;
+}
+
 /* ── React Flow dark theme ── */
 .react-flow {
   background: transparent !important;

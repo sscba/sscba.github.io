@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { motion, useScroll, useTransform, useInView } from 'framer-motion'
 import { projects } from '@/data/projects'
 import { ProjectCard } from '@/components/projects/ProjectCard'
+import { ScrambleText } from '@/components/effects/ScrambleText'
 
 const COPPER = '#c2773a'
 
@@ -67,7 +68,7 @@ export function Projects() {
             className="text-4xl md:text-5xl font-bold"
             style={{ fontFamily: "'Playfair Display', serif", color: '#fafaf9' }}
           >
-            Featured <em style={{ color: COPPER, fontStyle: 'italic' }}>Projects</em>
+            <ScrambleText text="Featured Projects" trigger={inView} lockSpeed={48} />
           </h2>
           <p
             className="mt-4 text-sm"

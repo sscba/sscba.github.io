@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useActiveSection } from '@/hooks/useActiveSection'
 import { cn } from '@/lib/utils'
+import { MagneticWrapper } from '@/components/effects/MagneticWrapper'
 
 const NAV_LINKS = [
   { label: 'Home', href: '#home' },
@@ -71,27 +72,39 @@ export function Navbar() {
             const isActive = active === sectionId
             return (
               <li key={href}>
-                <button
-                  onClick={() => handleNav(href)}
-                  className={cn(
-                    'text-sm tracking-wide transition-colors duration-200 relative pb-1',
-                    isActive ? '' : 'hover:text-[#fafaf9]'
-                  )}
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontWeight: isActive ? 600 : 400,
-                    color: isActive ? '#c2773a' : '#a8a29e',
-                  }}
-                >
-                  {label}
-                  {isActive && (
-                    <motion.span
-                      layoutId="nav-underline"
-                      className="absolute bottom-0 left-0 right-0 h-px"
-                      style={{ background: '#c2773a' }}
-                    />
-                  )}
-                </button>
+                <MagneticWrapper strength={0.15} radius={80}>
+                  <button
+                    onClick={() => handleNav(href)}
+                    className={cn(
+                      'text-sm tracking-wide transition-colors duration-200 relative pb-1 group',
+                      isActive ? '' : 'hover:text-[#fafaf9]'
+                    )}
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: isActive ? 600 : 400,
+                      color: isActive ? '#c2773a' : '#a8a29e',
+                    }}
+                  >
+                    {label}
+                    {/* Terminal cursor — only on hover for inactive items */}
+                    {!isActive && (
+                      <span
+                        className="ml-0.5 opacity-0 group-hover:opacity-100 animate-pulse"
+                        style={{ color: '#c2773a', fontFamily: "'Fira Code', monospace", fontSize: '0.9em' }}
+                        aria-hidden
+                      >
+                        █
+                      </span>
+                    )}
+                    {isActive && (
+                      <motion.span
+                        layoutId="nav-underline"
+                        className="absolute bottom-0 left-0 right-0 h-px"
+                        style={{ background: '#c2773a' }}
+                      />
+                    )}
+                  </button>
+                </MagneticWrapper>
               </li>
             )
           })}

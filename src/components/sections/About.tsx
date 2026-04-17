@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { useCountUp } from '@/hooks/useCountUp'
+import { ScrambleText } from '@/components/effects/ScrambleText'
 
 const COPPER = '#c2773a'
 
@@ -66,7 +67,7 @@ export function About() {
             className="text-4xl md:text-5xl font-bold"
             style={{ fontFamily: "'Playfair Display', serif", color: '#fafaf9' }}
           >
-            About <em style={{ color: COPPER, fontStyle: 'italic' }}>Me</em>
+            <ScrambleText text="About Me" trigger={inView} lockSpeed={60} />
           </h2>
         </motion.div>
 

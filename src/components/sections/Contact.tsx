@@ -1,6 +1,8 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Mail, Linkedin, Github, Briefcase, Download } from 'lucide-react'
+import { ScrambleText } from '@/components/effects/ScrambleText'
+import { MagneticWrapper } from '@/components/effects/MagneticWrapper'
 
 const COPPER = '#c2773a'
 
@@ -43,8 +45,7 @@ export function Contact() {
             className="text-4xl md:text-5xl font-bold"
             style={{ fontFamily: "'Playfair Display', serif", color: '#fafaf9' }}
           >
-            Let&apos;s{' '}
-            <em style={{ color: COPPER, fontStyle: 'italic' }}>Connect</em>
+            <ScrambleText text="Let's Connect" trigger={inView} lockSpeed={55} />
           </h2>
         </motion.div>
 
@@ -78,23 +79,24 @@ export function Contact() {
         {/* Social links */}
         <motion.div {...fadeUp(0.3)} className="flex flex-wrap justify-center gap-4">
           {SOCIAL_LINKS.map(({ label, href, icon: Icon, color }) => (
-            <motion.a
-              key={label}
-              href={href}
-              target={label !== 'Email' ? '_blank' : undefined}
-              rel="noopener noreferrer"
-              aria-label={label}
-              whileHover={{ scale: 1.12, y: -3 }}
-              whileTap={{ scale: 0.95 }}
-              className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200"
-              style={{
-                background: '#1c1917',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color,
-              }}
-            >
-              <Icon size={17} />
-            </motion.a>
+            <MagneticWrapper key={label} strength={0.4} radius={80}>
+              <motion.a
+                href={href}
+                target={label !== 'Email' ? '_blank' : undefined}
+                rel="noopener noreferrer"
+                aria-label={label}
+                whileHover={{ scale: 1.12, y: -3, filter: `drop-shadow(0 0 8px ${color}88)` }}
+                whileTap={{ scale: 0.95 }}
+                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200"
+                style={{
+                  background: '#1c1917',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color,
+                }}
+              >
+                <Icon size={17} />
+              </motion.a>
+            </MagneticWrapper>
           ))}
         </motion.div>
 

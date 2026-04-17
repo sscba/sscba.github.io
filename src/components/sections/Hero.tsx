@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useTypingEffect } from '@/hooks/useTypingEffect'
+import { ScrambleText } from '@/components/effects/ScrambleText'
+import { MagneticWrapper } from '@/components/effects/MagneticWrapper'
 
 const COPPER = '#c2773a'
 const COPPER_GLOW = 'rgba(194,119,58,0.4)'
@@ -12,6 +15,8 @@ const fadeUp = (delay = 0) => ({
 
 export function Hero() {
   const typedText = useTypingEffect()
+  // Trigger scramble after mount delay (after fadeUp animation settles)
+  const [scrambleTrigger] = useState(true)
 
   return (
     <section
@@ -44,16 +49,18 @@ export function Hero() {
               className="text-xs tracking-[0.3em] uppercase mb-3"
               style={{ fontFamily: "'Inter', sans-serif", color: COPPER }}
             >
-              &#47;&#47; Backend Engineer
+              <ScrambleText text="// Backend Engineer" trigger={scrambleTrigger} lockSpeed={30} />
             </p>
             <h1
               className="text-4xl md:text-6xl font-bold leading-tight"
               style={{ fontFamily: "'Playfair Display', serif", color: '#fafaf9' }}
             >
-              Shiv{' '}
-              <span style={{ color: COPPER, textShadow: `0 0 24px ${COPPER_GLOW}` }}>
-                Chandekar
-              </span>
+              <ScrambleText
+                text="Shiv Chandekar"
+                trigger={scrambleTrigger}
+                lockSpeed={55}
+                style={{ color: '#fafaf9' }}
+              />
             </h1>
           </motion.div>
 
@@ -84,38 +91,42 @@ export function Hero() {
 
           {/* CTA buttons */}
           <motion.div {...fadeUp(0.65)} className="flex flex-wrap gap-4 justify-center md:justify-start">
-            <a
-              href="#projects"
-              onClick={(e) => {
-                e.preventDefault()
-                document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })
-              }}
-              className="px-7 py-3 rounded-lg text-sm font-semibold tracking-wide transition-all duration-200 hover:scale-105"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                background: COPPER,
-                color: '#fafaf9',
-                boxShadow: `0 4px 20px rgba(194,119,58,0.45)`,
-              }}
-            >
-              View My Work
-            </a>
-            <a
-              href="#contact"
-              onClick={(e) => {
-                e.preventDefault()
-                document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
-              }}
-              className="px-7 py-3 rounded-lg text-sm font-semibold tracking-wide transition-all duration-200 hover:scale-105"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                background: 'transparent',
-                color: COPPER,
-                border: `1.5px solid ${COPPER}`,
-              }}
-            >
-              Get In Touch
-            </a>
+            <MagneticWrapper strength={0.3} radius={100}>
+              <a
+                href="#projects"
+                onClick={(e) => {
+                  e.preventDefault()
+                  document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className="relative overflow-hidden px-7 py-3 rounded-lg text-sm font-semibold tracking-wide transition-all duration-200 hover:scale-105"
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  background: COPPER,
+                  color: '#fafaf9',
+                  boxShadow: `0 4px 20px rgba(194,119,58,0.45)`,
+                }}
+              >
+                View My Work
+              </a>
+            </MagneticWrapper>
+            <MagneticWrapper strength={0.3} radius={100}>
+              <a
+                href="#contact"
+                onClick={(e) => {
+                  e.preventDefault()
+                  document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className="relative overflow-hidden px-7 py-3 rounded-lg text-sm font-semibold tracking-wide transition-all duration-200 hover:scale-105"
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  background: 'transparent',
+                  color: COPPER,
+                  border: `1.5px solid ${COPPER}`,
+                }}
+              >
+                Get In Touch
+              </a>
+            </MagneticWrapper>
           </motion.div>
 
           {/* Quick stats strip */}
